@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HDM — Hospital Discharge Manager</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --border: #e2e8f0;
+    --primary: #0f6e56; --primary-light: #e1f5ee;
+    --text: #1a2332; --text-muted: #64748b;
+    --danger: #dc2626; --warning: #d97706; --info: #2563eb;
+    --success: #059669;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  header {
+    background: var(--primary); color: #fff;
+    padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1 { font-size: 18px; font-weight: 600; letter-spacing: -.3px; }
+  header h1 span { opacity: .65; font-weight: 400; font-size: 14px; margin-left: 10px; }
+  #status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.15); border-radius: 20px;
+    padding: 4px 12px; font-size: 12px;
+  }
+  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+  #status-dot.error { background: #f87171; }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 20px 24px; }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .kpi-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .kpi-card .value { font-size: 32px; font-weight: 700; line-height: 1; color: var(--primary); }
+  .kpi-card .sub   { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-card.alert .value { color: var(--danger); }
+
+  /* Tabla de altas */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-header h2 { font-size: 15px; font-weight: 600; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 12px;
+    background: var(--primary-light); color: var(--primary); font-weight: 600;
+  }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #f8fafc; padding: 10px 14px; text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 10px 14px; font-size: 13px; }
+  tbody tr.new-row { animation: rowIn .4s ease; }
+  @keyframes rowIn { from { background: #d1fae5; } to { background: transparent; } }
+
+  .status-badge {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+  }
+  .status-completed { background: #dcfce7; color: #166534; }
+  .status-pending   { background: #fef9c3; color: #854d0e; }
+  .status-error     { background: #fee2e2; color: #991b1b; }
+
+  /* Alertas de demo */
+  #demo-alert {
+    display: none; margin-bottom: 16px; padding: 14px 18px;
+    border-radius: var(--radius); border-left: 4px solid var(--danger);
+    background: #fef2f2; color: var(--danger); font-weight: 600;
+    animation: pulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { from { opacity: 1; } to { opacity: .7; } }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc; border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏥 Hospital Discharge Manager <span>Demo · Zerto Business Continuity</span></h1>
+  <div id="status-pill">
+    <div id="status-dot"></div>
+    <span id="status-text">Conectando...</span>
+  </div>
+</header>
+
+<main>
+  <!-- Alerta demo -->
+  <div id="demo-alert"></div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Altas procesadas</div>
+      <div class="value" id="kpi-total">—</div>
+      <div class="sub">acumulado total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Altas última hora</div>
+      <div class="value" id="kpi-hour">—</div>
+      <div class="sub">ritmo actual</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Tiempo medio de alta</div>
+      <div class="value" id="kpi-avg">—</div>
+      <div class="sub">minutos</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Camas liberadas hoy</div>
+      <div class="value" id="kpi-beds">—</div>
+      <div class="sub">altas completadas</div>
+    </div>
+    <div class="kpi-card" id="kpi-pending-card">
+      <div class="label">Pacientes en espera</div>
+      <div class="value" id="kpi-pending">—</div>
+      <div class="sub">pendientes de alta</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Altas últimas 24h</div>
+      <div class="value" id="kpi-24h">—</div>
+      <div class="sub">último día</div>
+    </div>
+  </div>
+
+  <!-- Tabla de altas recientes -->
+  <div class="section-header">
+    <h2>Altas recientes</h2>
+    <span class="badge" id="table-count">—</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Paciente</th>
+          <th>Planta / Unidad</th>
+          <th>Cama</th>
+          <th>Diagnóstico</th>
+          <th>Tipo de alta</th>
+          <th>Médico</th>
+          <th>Procesado (min)</th>
+          <th>Fecha/hora</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="discharges-body">
+        <tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)"><span class="spinner"></span> Cargando altas...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:8000/api'
+  : '/api';   // Proxy nginx en producción
+
+let knownIds = new Set();
+let lastDemoAlert = '';
+
+function fmt(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
+}
+
+function statusBadge(s) {
+  const map = { completed:'Completada', pending:'Pendiente', error:'Error', cancelled:'Cancelada' };
+  return `<span class="status-badge status-${s}">${map[s]||s}</span>`;
+}
+
+async function fetchKPIs() {
+  const r = await fetch(`${API}/kpis`);
+  if (!r.ok) throw new Error('KPIs no disponibles');
+  const d = await r.json();
+  document.getElementById('kpi-total').textContent   = d.total_discharges.toLocaleString('es-ES');
+  document.getElementById('kpi-hour').textContent    = d.discharges_last_hour;
+  document.getElementById('kpi-avg').textContent     = d.avg_processing_time_min ?? '—';
+  document.getElementById('kpi-beds').textContent    = d.beds_freed_today;
+  document.getElementById('kpi-24h').textContent     = d.discharges_last_24h;
+  const pending = d.patients_pending;
+  document.getElementById('kpi-pending').textContent = pending;
+  document.getElementById('kpi-pending-card').classList.toggle('alert', pending > 10);
+}
+
+async function fetchDischarges() {
+  const r = await fetch(`${API}/discharges/recent?n=30`);
+  if (!r.ok) throw new Error('Altas no disponibles');
+  const rows = await r.json();
+  const tbody = document.getElementById('discharges-body');
+  document.getElementById('table-count').textContent = rows.length + ' altas';
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">⚠️ Sin datos — use Zerto Journal para recuperar</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(d => {
+    const isNew = !knownIds.has(d.id);
+    if (isNew) knownIds.add(d.id);
+    return `<tr class="${isNew ? 'new-row' : ''}">
+      <td><strong>${d.patient_name}</strong><br><small style="color:var(--text-muted)">${d.patient_id}</small></td>
+      <td>${d.ward}</td>
+      <td>${d.bed_number}</td>
+      <td><strong>${d.diagnosis_code}</strong> ${d.diagnosis_description || ''}</td>
+      <td>${d.discharge_type}</td>
+      <td>${d.attending_unit}</td>
+      <td style="text-align:center">${d.processing_time_min}'</td>
+      <td style="color:var(--text-muted)">${fmt(d.discharge_date)}</td>
+      <td>${statusBadge(d.status)}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function checkEvents() {
+  const r = await fetch(`${API}/events?n=1`);
+  if (!r.ok) return;
+  const [ev] = await r.json();
+  if (!ev) return;
+  const alertDiv = document.getElementById('demo-alert');
+  if (['critical','warning'].includes(ev.severity) && ev.message !== lastDemoAlert) {
+    lastDemoAlert = ev.message;
+    alertDiv.textContent = '⚠ ' + ev.message;
+    alertDiv.style.display = 'block';
+  } else if (ev.event_type === 'demo_recovery') {
+    alertDiv.style.display = 'none';
+    lastDemoAlert = '';
+  }
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    const dot  = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    if (d.status === 'ok') {
+      dot.className = ''; text.textContent = 'Sistema operativo';
+    } else {
+      dot.className = 'error'; text.textContent = 'Sistema degradado';
+    }
+  } catch {
+    document.getElementById('status-dot').className = 'error';
+    document.getElementById('status-text').textContent = 'Sin conexión';
+  }
+}
+
+async function refresh() {
+  try {
+    await Promise.all([fetchKPIs(), fetchDischarges(), checkEvents(), checkHealth()]);
+  } catch(e) {
+    document.getElementById('status-dot').className = 'error';
+    document.getElementById('status-text').textContent = 'Error de conexión';
+  }
+}
+
+refresh();
+setInterval(refresh, 3000);   // Actualizar cada 3 segundos
+</script>
+</body>
+</html>
