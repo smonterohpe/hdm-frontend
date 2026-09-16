@@ -5,139 +5,176 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HDM — Hospital Discharge Manager</title>
 <style>
-  :root {
-    --bg: #f4f6f9; --surface: #fff; --border: #e2e8f0;
-    --primary: #0f6e56; --primary-light: #e1f5ee;
-    --text: #1a2332; --text-muted: #64748b;
-    --danger: #dc2626; --warning: #d97706; --info: #2563eb;
-    --success: #059669;
-    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+:root {
+  --bg: #f4f6f9; --surface: #fff; --border: #e2e8f0;
+  --primary: #0f6e56; --primary-light: #e8f5f1; --primary-dark: #0a4535;
+  --text: #1a2332; --text-muted: #64748b;
+  --danger: #dc2626; --warning: #d97706; --success: #059669;
+  --sidebar-w: 220px;
+  --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; display: flex; height: 100vh; overflow: hidden; }
 
-  header {
-    background: var(--primary); color: #fff;
-    padding: 0 24px; height: 56px;
-    display: flex; align-items: center; justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,.15);
-  }
-  header h1 { font-size: 18px; font-weight: 600; letter-spacing: -.3px; }
-  header h1 span { opacity: .65; font-weight: 400; font-size: 14px; margin-left: 10px; }
-  #status-pill {
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,.15); border-radius: 20px;
-    padding: 4px 12px; font-size: 12px;
-  }
-  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
-  #status-dot.error { background: #f87171; }
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: linear-gradient(135deg, #0a4535 0%, #0f6e56 60%, #1a9e7a 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+#login-screen.hidden { display: none; }
+.login-box {
+  background: #fff; border-radius: 16px; padding: 40px 44px; width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3); text-align: center;
+}
+.login-logo { font-size: 40px; margin-bottom: 8px; }
+.login-title { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.login-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 28px; }
+.login-field { margin-bottom: 14px; text-align: left; }
+.login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+.login-field input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: border-color .2s; }
+.login-field input:focus { border-color: var(--primary); }
+.login-btn { width: 100%; padding: 12px; margin-top: 8px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.login-btn:hover { background: var(--primary-dark); }
+.login-error { margin-top: 12px; font-size: 12px; color: var(--danger); min-height: 18px; font-weight: 600; }
+.login-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; }
 
-  main { max-width: 1280px; margin: 0 auto; padding: 20px 24px; }
+/* ── SIDEBAR ── */
+#app-wrapper { display: none; width: 100%; height: 100vh; overflow: hidden; }
+#app-wrapper.visible { display: flex; }
 
-  /* KPI cards */
-  .kpi-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 14px; margin-bottom: 24px;
-  }
-  .kpi-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow);
-  }
-  .kpi-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-  .kpi-card .value { font-size: 32px; font-weight: 700; line-height: 1; color: var(--primary); }
-  .kpi-card .sub   { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-  .kpi-card.alert .value { color: var(--danger); }
+aside {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 0; overflow: hidden;
+}
+.sidebar-header {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo { display: flex; align-items: center; gap: 10px; }
+.sidebar-logo .icon { font-size: 22px; }
+.sidebar-logo .name { font-size: 14px; font-weight: 700; color: var(--primary); line-height: 1.2; }
+.sidebar-logo .sub { font-size: 10px; color: var(--text-muted); }
 
-  /* Tabla de altas */
-  .section-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .section-header h2 { font-size: 15px; font-weight: 600; }
-  .badge {
-    font-size: 11px; padding: 2px 8px; border-radius: 12px;
-    background: var(--primary-light); color: var(--primary); font-weight: 600;
-  }
+nav.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+.nav-section { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); padding: 10px 10px 4px; }
+.nav-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text-muted); transition: all .15s;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--primary-light); color: var(--primary); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.nav-item .nav-icon { font-size: 15px; margin-right: 8px; }
+.nav-item .nav-badge { font-size: 11px; font-weight: 700; background: var(--primary); color: #fff; border-radius: 10px; padding: 1px 7px; }
+.nav-item.active .nav-badge { background: var(--primary-dark); }
 
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { background: #f8fafc; padding: 10px 14px; text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #f8fafc; }
-  tbody td { padding: 10px 14px; font-size: 13px; }
-  tbody tr.new-row { animation: rowIn .4s ease; }
-  @keyframes rowIn { from { background: #d1fae5; } to { background: transparent; } }
+/* RBG widget en sidebar */
+.rbg-widget {
+  margin: 8px; padding: 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 10px;
+}
+.rbg-title { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+.rbg-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.rbg-stat { text-align: center; }
+.rbg-stat .val { font-size: 18px; font-weight: 700; color: var(--primary); }
+.rbg-stat .lbl { font-size: 10px; color: var(--text-muted); }
+.rbg-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.rbg-btn { padding: 6px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+.rbg-btn:hover { opacity: .85; }
+.rbg-btn.start { background: var(--primary); color: #fff; }
+.rbg-btn.stop  { background: #fee2e2; color: var(--danger); }
+.rbg-status { text-align: center; margin-top: 6px; font-size: 11px; }
+.rbg-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ccc; margin-right: 4px; }
+.rbg-dot.running { background: var(--success); animation: blink 1.5s infinite; }
+.rbg-dot.paused  { background: var(--warning); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-  .status-badge {
-    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
-  }
-  .status-completed { background: #dcfce7; color: #166534; }
-  .status-pending   { background: #fef9c3; color: #854d0e; }
-  .status-error     { background: #fee2e2; color: #991b1b; }
+.sidebar-footer {
+  padding: 12px 8px; border-top: 1px solid var(--border);
+}
+.conn-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); padding: 4px 8px; margin-bottom: 6px; }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.conn-dot.error { background: var(--danger); }
+.logout-btn { width: 100%; padding: 8px; background: #fee2e2; color: var(--danger); border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .2s; }
+.logout-btn:hover { background: #fecaca; }
 
-  /* Alertas de demo */
-  #demo-alert {
-    display: none; margin-bottom: 16px; padding: 14px 18px;
-    border-radius: var(--radius); border-left: 4px solid var(--danger);
-    background: #fef2f2; color: var(--danger); font-weight: 600;
-    animation: pulse 1s ease-in-out infinite alternate;
-  }
-  @keyframes pulse { from { opacity: 1; } to { opacity: .7; } }
+/* ── MAIN CONTENT ── */
+#main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc; border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+header {
+  background: var(--primary); color: #fff;
+  padding: 0 24px; height: 52px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+header h1 { font-size: 16px; font-weight: 600; }
+header h1 span { opacity: .65; font-weight: 400; font-size: 13px; margin-left: 10px; }
+#status-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.15); border-radius: 20px; padding: 4px 12px; font-size: 12px; }
+#status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+#status-dot.error { background: #f87171; }
 
-  /* ── Login ── */
-  #login-screen {
-    position: fixed; inset: 0; z-index: 100;
-    background: linear-gradient(135deg, #0a4535 0%, #0f6e56 60%, #1a9e7a 100%);
-    display: flex; align-items: center; justify-content: center;
-  }
-  #login-screen.hidden { display: none; }
-  .login-box {
-    background: #fff; border-radius: 16px;
-    padding: 40px 44px; width: 380px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.3);
-    text-align: center;
-  }
-  .login-logo { font-size: 40px; margin-bottom: 8px; }
-  .login-title { font-size: 20px; font-weight: 700; color: #0f6e56; margin-bottom: 4px; }
-  .login-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 28px; }
-  .login-field { margin-bottom: 14px; text-align: left; }
-  .login-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
-  .login-field input {
-    width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
-    border-radius: 8px; font-size: 14px; color: var(--text);
-    outline: none; transition: border-color .2s;
-  }
-  .login-field input:focus { border-color: #0f6e56; }
-  .login-btn {
-    width: 100%; padding: 12px; margin-top: 8px;
-    background: #0f6e56; color: #fff; border: none;
-    border-radius: 8px; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background .2s;
-  }
-  .login-btn:hover { background: #0a4535; }
-  .login-error {
-    margin-top: 12px; font-size: 12px; color: var(--danger);
-    min-height: 18px; font-weight: 600;
-  }
-  .login-footer { margin-top: 24px; font-size: 11px; color: #cbd5e1; }
-  #app-wrapper { display: none; }
-  #app-wrapper.visible { display: block; }
+main { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+.kpi-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.kpi-card .value { font-size: 32px; font-weight: 700; line-height: 1; color: var(--primary); }
+.kpi-card .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.kpi-card.alert .value { color: var(--danger); }
+
+/* Tabla */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-header h2 { font-size: 15px; font-weight: 600; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #f8fafc; padding: 10px 14px; text-align: left; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f8fafc; }
+tbody td { padding: 10px 14px; font-size: 13px; }
+tbody tr.new-row { animation: rowIn .4s ease; }
+@keyframes rowIn { from { background: #d1fae5; } to { background: transparent; } }
+.status-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.status-completed { background: #dcfce7; color: #166534; }
+.status-pending   { background: #fef9c3; color: #854d0e; }
+.status-error     { background: #fee2e2; color: #991b1b; }
+
+/* Alerta demo */
+#demo-alert { display: none; margin-bottom: 16px; padding: 14px 18px; border-radius: var(--radius); border-left: 4px solid var(--danger); background: #fef2f2; color: var(--danger); font-weight: 600; animation: pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse { from{opacity:1} to{opacity:.7} }
+
+/* Plantas view */
+.ward-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.ward-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+.ward-name { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.ward-bar-bg { background: #f1f5f9; border-radius: 4px; height: 8px; margin-bottom: 8px; overflow: hidden; }
+.ward-bar-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .6s ease; }
+.ward-bar-fill.high { background: var(--warning); }
+.ward-bar-fill.full { background: var(--danger); }
+.ward-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+.ward-freed { font-weight: 600; color: var(--success); }
+
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ccc; border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<!-- ── Pantalla de login ── -->
+<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">🏥</div>
     <div class="login-title">Hospital Discharge Manager</div>
     <div class="login-sub">Demo · Zerto Business Continuity</div>
-
     <div class="login-field">
       <label>Usuario</label>
       <input type="text" id="login-user" placeholder="usuario" autocomplete="username">
@@ -152,99 +189,164 @@
   </div>
 </div>
 
-<!-- ── Aplicación principal ── -->
+<!-- ── APP ── -->
 <div id="app-wrapper">
-<header>
-  <h1>🏥 Hospital Discharge Manager <span>Demo · Zerto Business Continuity</span></h1>
-  <div id="status-pill">
-    <div id="status-dot"></div>
-    <span id="status-text">Conectando...</span>
-  </div>
-</header>
 
-<main>
-  <!-- Alerta demo -->
-  <div id="demo-alert"></div>
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="icon">🏥</span>
+        <div><div class="name">HDM</div><div class="sub">Hospital Discharge Manager</div></div>
+      </div>
+    </div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="label">Altas procesadas</div>
-      <div class="value" id="kpi-total">—</div>
-      <div class="sub">acumulado total</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Altas última hora</div>
-      <div class="value" id="kpi-hour">—</div>
-      <div class="sub">ritmo actual</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Tiempo medio de alta</div>
-      <div class="value" id="kpi-avg">—</div>
-      <div class="sub">minutos</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Camas liberadas hoy</div>
-      <div class="value" id="kpi-beds">—</div>
-      <div class="sub">altas completadas</div>
-    </div>
-    <div class="kpi-card" id="kpi-pending-card">
-      <div class="label">Pacientes en espera</div>
-      <div class="value" id="kpi-pending">—</div>
-      <div class="sub">pendientes de alta</div>
-    </div>
-    <div class="kpi-card">
-      <div class="label">Altas últimas 24h</div>
-      <div class="value" id="kpi-24h">—</div>
-      <div class="sub">último día</div>
-    </div>
-  </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Vistas</div>
+      <div class="nav-item active" onclick="switchView('altas')">
+        <span><span class="nav-icon">📋</span>Altas</span>
+        <span class="nav-badge" id="nb-altas">—</span>
+      </div>
+      <div class="nav-item" onclick="switchView('plantas')">
+        <span><span class="nav-icon">🏨</span>Plantas</span>
+        <span class="nav-badge" id="nb-plantas">7</span>
+      </div>
+      <div class="nav-item" onclick="switchView('kpis')">
+        <span><span class="nav-icon">📊</span>KPIs</span>
+      </div>
+      <div class="nav-item" onclick="switchView('about')">
+        <span><span class="nav-icon">ℹ️</span>About</span>
+      </div>
+    </nav>
 
-  <!-- Tabla de altas recientes -->
-  <div class="section-header">
-    <h2>Altas recientes</h2>
-    <span class="badge" id="table-count">—</span>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Paciente</th>
-          <th>Planta / Unidad</th>
-          <th>Cama</th>
-          <th>Diagnóstico</th>
-          <th>Tipo de alta</th>
-          <th>Médico</th>
-          <th>Procesado (min)</th>
-          <th>Fecha/hora</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody id="discharges-body">
-        <tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)"><span class="spinner"></span> Cargando altas...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</main>
+    <!-- RBG Widget -->
+    <div class="rbg-widget">
+      <div class="rbg-title">Auto-Generator</div>
+      <div class="rbg-stats">
+        <div class="rbg-stat">
+          <div class="val" id="rbg-count">—</div>
+          <div class="lbl">Generadas</div>
+        </div>
+        <div class="rbg-stat">
+          <div class="val" id="rbg-errors" style="color:var(--danger)">0</div>
+          <div class="lbl">Errores</div>
+        </div>
+      </div>
+      <div class="rbg-btns">
+        <button class="rbg-btn start" onclick="rbgAction('resume')">▶ Start</button>
+        <button class="rbg-btn stop"  onclick="rbgAction('pause')">■ Stop</button>
+      </div>
+      <div class="rbg-status">
+        <span class="rbg-dot" id="rbg-dot"></span>
+        <span id="rbg-label">—</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="conn-status">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span id="conn-label">Conectando...</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Log out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div id="main-content">
+    <header>
+      <h1>Hospital Discharge Manager <span id="view-title">Altas recientes</span></h1>
+      <div id="status-pill">
+        <div id="status-dot"></div>
+        <span id="status-text">Conectando...</span>
+      </div>
+    </header>
+
+    <main>
+      <div id="demo-alert"></div>
+
+      <!-- VIEW: Altas -->
+      <div class="view active" id="view-altas">
+        <div class="section-header">
+          <h2>Altas recientes</h2>
+          <span class="badge" id="table-count">—</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Paciente</th><th>Planta / Unidad</th><th>Cama</th>
+                <th>Diagnóstico</th><th>Tipo de alta</th><th>Médico</th>
+                <th>Proc. (min)</th><th>Fecha/hora</th><th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="discharges-body">
+              <tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)"><span class="spinner"></span> Cargando altas...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VIEW: Plantas -->
+      <div class="view" id="view-plantas">
+        <div class="section-header"><h2>Ocupación por planta</h2></div>
+        <div class="ward-grid" id="ward-grid">
+          <div style="color:var(--text-muted)">Cargando plantas...</div>
+        </div>
+      </div>
+
+      <!-- VIEW: KPIs -->
+      <div class="view" id="view-kpis">
+        <div class="section-header"><h2>KPIs en tiempo real</h2></div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="label">Altas procesadas</div><div class="value" id="kpi-total">—</div><div class="sub">acumulado total</div></div>
+          <div class="kpi-card"><div class="label">Última hora</div><div class="value" id="kpi-hour">—</div><div class="sub">altas/hora</div></div>
+          <div class="kpi-card"><div class="label">Tiempo medio</div><div class="value" id="kpi-avg">—</div><div class="sub">minutos por alta</div></div>
+          <div class="kpi-card"><div class="label">Camas liberadas hoy</div><div class="value" id="kpi-beds">—</div><div class="sub">jornada en curso</div></div>
+          <div class="kpi-card" id="kpi-pending-card"><div class="label">Pacientes en espera</div><div class="value" id="kpi-pending">—</div><div class="sub">pendientes de alta</div></div>
+          <div class="kpi-card"><div class="label">Últimas 24h</div><div class="value" id="kpi-24h">—</div><div class="sub">altas totales</div></div>
+        </div>
+      </div>
+
+      <!-- VIEW: About -->
+      <div class="view" id="view-about">
+        <div style="max-width:600px">
+          <h2 style="font-size:18px;color:var(--primary);margin-bottom:12px">Hospital Discharge Manager</h2>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:16px">
+            Simulador de gestión de altas médicas hospitalarias para demos de continuidad de negocio con <strong>Zerto</strong>. El sistema genera altas ficticias de forma continua mediante el RBG, permitiendo demostrar en tiempo real el impacto de un incidente y la recuperación con RPO de segundos.
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:#f8fafc">
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);text-transform:uppercase">VM</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);text-transform:uppercase">Rol</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);text-transform:uppercase">Stack</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);text-transform:uppercase">Puerto</th>
+            </tr></thead>
+            <tbody>
+              <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">VM1</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Frontend</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">nginx + HTML/JS</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">8081</td></tr>
+              <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">VM2</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Backend + RBG</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">FastAPI + Gunicorn</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">8001</td></tr>
+              <tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">VM3</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">Base de datos</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">PostgreSQL 16</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">5432</td></tr>
+              <tr><td style="padding:8px 12px">VM4</td><td style="padding:8px 12px">Observability</td><td style="padding:8px 12px">nginx + HTML/JS</td><td style="padding:8px 12px">8082</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:20px;font-size:11px;color:#cbd5e1">HDM v1.0.0 · github.com/smonterohpe · HPE Zerto Demo Suite</p>
+        </div>
+      </div>
+
+    </main>
+  </div><!-- /main-content -->
 </div><!-- /app-wrapper -->
 
 <script>
-const API = window.location.hostname === 'localhost'
-  ? 'http://localhost:8001/api'
-  : '/api';   // Proxy nginx en producción
+const API = '/api';
+const USERS = { 'admin':'zerto2024', 'demo':'zerto2024', 'zerto':'zerto2024' };
+let knownIds = new Set();
+let lastAlertMsg = '';
 
-// ── Credenciales de demo (hardcoded) ──────────────
-const USERS = {
-  'admin':  'zerto2024',
-  'demo':   'zerto2024',
-  'zerto':  'zerto2024',
-};
-
+// ── Login / Logout ────────────────────────────────
 function doLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
-
   if (USERS[user] && USERS[user] === pass) {
     sessionStorage.setItem('hdm_auth', '1');
     document.getElementById('login-screen').classList.add('hidden');
@@ -257,26 +359,43 @@ function doLogin() {
   }
 }
 
-// Permitir login con Enter
-document.addEventListener('DOMContentLoaded', () => {
-  ['login-user','login-pass'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
-  });
-  // Si ya estaba autenticado en esta sesión, saltar el login
-  if (sessionStorage.getItem('hdm_auth') === '1') {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-wrapper').classList.add('visible');
-  }
+function doLogout() {
+  sessionStorage.removeItem('hdm_auth');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-wrapper').classList.remove('visible');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+['login-user','login-pass'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
 });
 
-let knownIds = new Set();
-let lastDemoAlert = '';
+if (sessionStorage.getItem('hdm_auth') === '1') {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-wrapper').classList.add('visible');
+}
+
+// ── Navegación ────────────────────────────────────
+const viewTitles = { altas:'Altas recientes', plantas:'Ocupación por planta', kpis:'KPIs en tiempo real', about:'Acerca de' };
+function switchView(id) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.getElementById('view-title').textContent = viewTitles[id] || '';
+}
+
+// ── Helpers ───────────────────────────────────────
+async function api(path, method='GET') {
+  const r = await fetch(API + path, { method });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
 
 function fmt(ts) {
   const d = new Date(ts);
-  return d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('es-ES') + ' ' + d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
 }
 
 function statusBadge(s) {
@@ -284,42 +403,38 @@ function statusBadge(s) {
   return `<span class="status-badge status-${s}">${map[s]||s}</span>`;
 }
 
-async function fetchKPIs() {
-  const r = await fetch(`${API}/kpis`);
-  if (!r.ok) throw new Error('KPIs no disponibles');
-  const d = await r.json();
+// ── KPIs ──────────────────────────────────────────
+async function refreshKPIs() {
+  const d = await api('/kpis');
   document.getElementById('kpi-total').textContent   = d.total_discharges.toLocaleString('es-ES');
   document.getElementById('kpi-hour').textContent    = d.discharges_last_hour;
   document.getElementById('kpi-avg').textContent     = d.avg_processing_time_min ?? '—';
   document.getElementById('kpi-beds').textContent    = d.beds_freed_today;
+  document.getElementById('kpi-pending').textContent = d.patients_pending;
   document.getElementById('kpi-24h').textContent     = d.discharges_last_24h;
-  const pending = d.patients_pending;
-  document.getElementById('kpi-pending').textContent = pending;
-  document.getElementById('kpi-pending-card').classList.toggle('alert', pending > 10);
+  document.getElementById('kpi-pending-card').classList.toggle('alert', d.patients_pending > 10);
+  // Badge sidebar
+  document.getElementById('nb-altas').textContent = d.total_discharges > 999
+    ? Math.floor(d.total_discharges/1000)+'k+' : d.total_discharges;
 }
 
-async function fetchDischarges() {
-  const r = await fetch(`${API}/discharges/recent?n=30`);
-  if (!r.ok) throw new Error('Altas no disponibles');
-  const rows = await r.json();
+// ── Altas ─────────────────────────────────────────
+async function refreshDischarges() {
+  const rows = await api('/discharges/recent?n=30');
   const tbody = document.getElementById('discharges-body');
   document.getElementById('table-count').textContent = rows.length + ' altas';
-
-  if (rows.length === 0) {
+  if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-muted)">⚠️ Sin datos — use Zerto Journal para recuperar</td></tr>';
     return;
   }
-
   tbody.innerHTML = rows.map(d => {
     const isNew = !knownIds.has(d.id);
     if (isNew) knownIds.add(d.id);
-    return `<tr class="${isNew ? 'new-row' : ''}">
+    return `<tr class="${isNew?'new-row':''}">
       <td><strong>${d.patient_name}</strong><br><small style="color:var(--text-muted)">${d.patient_id}</small></td>
-      <td>${d.ward}</td>
-      <td>${d.bed_number}</td>
-      <td><strong>${d.diagnosis_code}</strong> ${d.diagnosis_description || ''}</td>
-      <td>${d.discharge_type}</td>
-      <td>${d.attending_unit}</td>
+      <td>${d.ward}</td><td>${d.bed_number}</td>
+      <td><strong>${d.diagnosis_code}</strong> ${d.diagnosis_description||''}</td>
+      <td>${d.discharge_type}</td><td>${d.attending_unit}</td>
       <td style="text-align:center">${d.processing_time_min}'</td>
       <td style="color:var(--text-muted)">${fmt(d.discharge_date)}</td>
       <td>${statusBadge(d.status)}</td>
@@ -327,46 +442,72 @@ async function fetchDischarges() {
   }).join('');
 }
 
-async function checkEvents() {
-  const r = await fetch(`${API}/events?n=1`);
-  if (!r.ok) return;
-  const [ev] = await r.json();
-  if (!ev) return;
+// ── Plantas ───────────────────────────────────────
+async function refreshWards() {
+  const wards = await api('/wards');
+  document.getElementById('ward-grid').innerHTML = wards.map(w => {
+    const pct = w.occupancy_pct ?? 0;
+    const cls = pct >= 90 ? 'full' : pct >= 75 ? 'high' : '';
+    return `<div class="ward-card">
+      <div class="ward-name">${w.ward_name}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${w.specialty} · Planta ${w.floor}</div>
+      <div class="ward-bar-bg"><div class="ward-bar-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+      <div class="ward-stats">
+        <span>${pct}% ocupación</span>
+        <span class="ward-freed">↑ ${w.freed_today} liberadas hoy</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Health + RBG ──────────────────────────────────
+async function refreshHealth() {
+  const h = await api('/health');
+  const ok = h.status === 'ok';
+  document.getElementById('status-dot').className = ok ? '' : 'error';
+  document.getElementById('status-text').textContent = ok ? 'Sistema operativo' : 'Sistema degradado';
+  document.getElementById('conn-dot').className = 'conn-dot' + (ok ? '' : ' error');
+  document.getElementById('conn-label').textContent = ok ? 'API conectada' : 'Sin conexión';
+
+  const rbg = h.rbg || {};
+  document.getElementById('rbg-count').textContent = rbg.generated_count ?? '—';
+  const dot = document.getElementById('rbg-dot');
+  const lbl = document.getElementById('rbg-label');
+  if (rbg.running && !rbg.paused) { dot.className='rbg-dot running'; lbl.textContent='Generando'; }
+  else if (rbg.paused)            { dot.className='rbg-dot paused';  lbl.textContent='Pausado'; }
+  else                            { dot.className='rbg-dot';         lbl.textContent='Inactivo'; }
+}
+
+// ── Alertas de demo ───────────────────────────────
+async function refreshEvents() {
+  const evs = await api('/events?n=1');
+  const ev = evs[0];
   const alertDiv = document.getElementById('demo-alert');
-  if (['critical','warning'].includes(ev.severity) && ev.message !== lastDemoAlert) {
-    lastDemoAlert = ev.message;
+  if (ev && ['critical','warning'].includes(ev.severity) && ev.message !== lastAlertMsg) {
+    lastAlertMsg = ev.message;
     alertDiv.textContent = '⚠ ' + ev.message;
     alertDiv.style.display = 'block';
-  } else if (ev.event_type === 'demo_recovery') {
-    alertDiv.style.display = 'none';
-    lastDemoAlert = '';
   }
+  if (ev?.event_type === 'demo_recovery') { alertDiv.style.display='none'; lastAlertMsg=''; }
 }
 
-async function checkHealth() {
-  try {
-    const r = await fetch(`${API}/health`);
-    const d = await r.json();
-    const dot  = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
-    if (d.status === 'ok') {
-      dot.className = ''; text.textContent = 'Sistema operativo';
-    } else {
-      dot.className = 'error'; text.textContent = 'Sistema degradado';
-    }
-  } catch {
-    document.getElementById('status-dot').className = 'error';
-    document.getElementById('status-text').textContent = 'Sin conexión';
-  }
+// ── RBG control ───────────────────────────────────
+async function rbgAction(action) {
+  await api('/rbg/' + action, 'POST');
+  await refreshHealth();
 }
 
+// ── Ciclo principal ───────────────────────────────
 async function refresh() {
   try {
-    await Promise.all([fetchKPIs(), fetchDischarges(), checkEvents(), checkHealth()]);
-  } catch(e) {
-    document.getElementById('status-dot').className = 'error';
-    document.getElementById('status-text').textContent = 'Error de conexión';
-  }
+    await Promise.allSettled([
+      refreshKPIs(),
+      refreshDischarges(),
+      refreshWards(),
+      refreshHealth(),
+      refreshEvents(),
+    ]);
+  } catch(e) { console.error(e); }
 }
 
 setInterval(() => {
