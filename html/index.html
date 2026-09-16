@@ -470,6 +470,7 @@ async function refreshHealth() {
   document.getElementById('conn-label').textContent = ok ? 'API conectada' : 'Sin conexión';
 
   const rbg = h.rbg || {};
+  // Total real desde la BD (fix multi-worker gunicorn)
   document.getElementById('rbg-count').textContent = rbg.generated_count ?? '—';
   const dot = document.getElementById('rbg-dot');
   const lbl = document.getElementById('rbg-label');
@@ -479,16 +480,34 @@ async function refreshHealth() {
 }
 
 // ── Alertas de demo ───────────────────────────────
+let alertClearTimer = null;
+
 async function refreshEvents() {
   const evs = await api('/events?n=1');
   const ev = evs[0];
   const alertDiv = document.getElementById('demo-alert');
+
   if (ev && ['critical','warning'].includes(ev.severity) && ev.message !== lastAlertMsg) {
     lastAlertMsg = ev.message;
     alertDiv.textContent = '⚠ ' + ev.message;
     alertDiv.style.display = 'block';
+
+    // Failover test es no disruptivo: la alerta desaparece sola a los 8s
+    if (alertClearTimer) clearTimeout(alertClearTimer);
+    if (ev.event_type === 'demo_failover_test') {
+      alertClearTimer = setTimeout(() => {
+        alertDiv.style.display = 'none';
+        lastAlertMsg = '';
+      }, 8000);
+    }
   }
-  if (ev?.event_type === 'demo_recovery') { alertDiv.style.display='none'; lastAlertMsg=''; }
+
+  // Recovery limpia cualquier alerta activa inmediatamente
+  if (ev?.event_type === 'demo_recovery') {
+    if (alertClearTimer) clearTimeout(alertClearTimer);
+    alertDiv.style.display = 'none';
+    lastAlertMsg = '';
+  }
 }
 
 // ── RBG control ───────────────────────────────────
