@@ -480,42 +480,37 @@ async function refreshHealth() {
 }
 
 // ── Alertas de demo ───────────────────────────────
-let alertClearTimer = null;
-let alertEventType  = null;
+// Sólo mostramos alertas de eventos ocurridos en los últimos 15 segundos.
+// Así el failover_test (no disruptivo) desaparece solo cuando el evento
+// queda más antiguo que esa ventana, sin depender de timers ni del ciclo.
+const ALERT_TTL_MS = 15000;
 
 async function refreshEvents() {
   const evs = await api('/events?n=1');
   const ev = evs[0];
   const alertDiv = document.getElementById('demo-alert');
 
-  // Nuevo evento de alerta
-  if (ev && ['critical','warning'].includes(ev.severity) && ev.message !== lastAlertMsg) {
-    lastAlertMsg   = ev.message;
-    alertEventType = ev.event_type;
+  if (!ev) { alertDiv.style.display = 'none'; return; }
+
+  // ¿Es reciente?
+  const ageMs = Date.now() - new Date(ev.created_at + 'Z').getTime();
+  const isRecent = ageMs < ALERT_TTL_MS;
+
+  // Recovery siempre limpia
+  if (ev.event_type === 'demo_recovery') {
+    alertDiv.style.display = 'none';
+    lastAlertMsg = '';
+    return;
+  }
+
+  // Mostrar solo si es reciente y es warning/critical
+  if (isRecent && ['critical','warning'].includes(ev.severity)) {
     alertDiv.textContent = '⚠ ' + ev.message;
     alertDiv.style.display = 'block';
-    if (alertClearTimer) clearTimeout(alertClearTimer);
-  }
-
-  // Failover test: no disruptivo, cerrar automáticamente a los 8s
-  // Se comprueba en cada ciclo por si el timer se perdió
-  if (alertDiv.style.display !== 'none' && alertEventType === 'demo_failover_test') {
-    if (!alertClearTimer) {
-      alertClearTimer = setTimeout(() => {
-        alertDiv.style.display = 'none';
-        lastAlertMsg   = '';
-        alertEventType = null;
-        alertClearTimer = null;
-      }, 8000);
-    }
-  }
-
-  // Recovery: cierra cualquier alerta inmediatamente
-  if (ev?.event_type === 'demo_recovery') {
-    if (alertClearTimer) { clearTimeout(alertClearTimer); alertClearTimer = null; }
+    lastAlertMsg = ev.message;
+  } else {
     alertDiv.style.display = 'none';
-    lastAlertMsg   = '';
-    alertEventType = null;
+    lastAlertMsg = '';
   }
 }
 
