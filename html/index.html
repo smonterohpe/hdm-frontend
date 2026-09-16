@@ -481,32 +481,41 @@ async function refreshHealth() {
 
 // ── Alertas de demo ───────────────────────────────
 let alertClearTimer = null;
+let alertEventType  = null;
 
 async function refreshEvents() {
   const evs = await api('/events?n=1');
   const ev = evs[0];
   const alertDiv = document.getElementById('demo-alert');
 
+  // Nuevo evento de alerta
   if (ev && ['critical','warning'].includes(ev.severity) && ev.message !== lastAlertMsg) {
-    lastAlertMsg = ev.message;
+    lastAlertMsg   = ev.message;
+    alertEventType = ev.event_type;
     alertDiv.textContent = '⚠ ' + ev.message;
     alertDiv.style.display = 'block';
-
-    // Failover test es no disruptivo: la alerta desaparece sola a los 8s
     if (alertClearTimer) clearTimeout(alertClearTimer);
-    if (ev.event_type === 'demo_failover_test') {
+  }
+
+  // Failover test: no disruptivo, cerrar automáticamente a los 8s
+  // Se comprueba en cada ciclo por si el timer se perdió
+  if (alertDiv.style.display !== 'none' && alertEventType === 'demo_failover_test') {
+    if (!alertClearTimer) {
       alertClearTimer = setTimeout(() => {
         alertDiv.style.display = 'none';
-        lastAlertMsg = '';
+        lastAlertMsg   = '';
+        alertEventType = null;
+        alertClearTimer = null;
       }, 8000);
     }
   }
 
-  // Recovery limpia cualquier alerta activa inmediatamente
+  // Recovery: cierra cualquier alerta inmediatamente
   if (ev?.event_type === 'demo_recovery') {
-    if (alertClearTimer) clearTimeout(alertClearTimer);
+    if (alertClearTimer) { clearTimeout(alertClearTimer); alertClearTimer = null; }
     alertDiv.style.display = 'none';
-    lastAlertMsg = '';
+    lastAlertMsg   = '';
+    alertEventType = null;
   }
 }
 
