@@ -14,7 +14,7 @@ apt-get update -qq
 apt-get install -y nginx
 
 mkdir -p "$WEB_DIR"
-cp -r html/* "$WEB_DIR/"
+cp /opt/hdm/frontend/html/index.html "$WEB_DIR/"
 chown -R www-data:www-data "$WEB_DIR"
 
 cp nginx/hdm-frontend.conf /etc/nginx/sites-available/hdm-frontend
